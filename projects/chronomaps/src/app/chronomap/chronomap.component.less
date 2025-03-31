@@ -577,6 +577,29 @@
                         }
                     }
 
+                    .arrow-label {
+                        position: absolute;
+                        z-index: 1;
+                        color: white;
+                        color: @color-white;
+                        .font-manrope;
+                        font-size: 13px;
+                        font-weight: 400;
+                        line-height: 23px;
+                        letter-spacing: 0.15px;
+                        width: 40%;
+                        .desktop({
+                            top: calc(200% ~'-' @desktop-content-peek-height - @desktop-map-toggle-height - (@desktop-description-toggle-height / 2) + 24px);
+
+                        });
+                        .mobile({
+                            top: calc(200% ~'-' @mobile-content-peek-height - @mobile-map-toggle-height - (@mobile-description-toggle-height / 2) + 14px);
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            white-space: nowrap;
+                        });
+                    }
+
                     .target-icon {
                         position: absolute;
                         transition: top @transition-time ease-in-out;
@@ -619,6 +642,28 @@
                             }
         
                             &.rev {
+                                .desktop({
+                                    right: 40px;
+                                });
+                                .mobile({
+                                    right: 16px;
+                                });
+                            }    
+                        }
+                        .arrow-label {
+                            transition-delay: 2s;
+                            &:not(.rev) {
+                                text-align: left;
+                                .desktop({
+                                    left: 40px;
+                                });
+                                .mobile({
+                                    left: 16px;
+                                });
+                            }
+        
+                            &.rev {
+                                text-align: right;
                                 .desktop({
                                     right: 40px;
                                 });

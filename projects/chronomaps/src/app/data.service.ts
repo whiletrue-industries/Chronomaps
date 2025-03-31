@@ -101,11 +101,14 @@ export class ChronomapDatabase extends BaserowDatabase {
   // Feature Flags
   disableTimeline = signal<boolean>(false);
   imageItemMarkers = signal<boolean>(true);
+  nextBackTitlesLightbox = signal<boolean>(false);
 
   // MapBox
   mapStyle = signal<string>('');
   backgroundMapStyle = signal<string>('');
   mapboxKey = signal<string>('');
+  mapTitle = signal<string | null>(null);
+  backgroundMapTitle = signal<string | null>(null);
 
   // Leaflet
   Map_BG = signal<string>('');
@@ -170,6 +173,11 @@ export class ChronomapDatabase extends BaserowDatabase {
           this.Map_BG_Bounds.set(keyValues.Map_BG_Bounds?.value || '');
           this.disableTimeline.set(keyValues.Disable_Timeline?.value === 'true');
           this.imageItemMarkers.set(keyValues.Image_Item_Markers?.value === 'true');
+
+          this.nextBackTitlesLightbox.set(keyValues.Next_Back_Titles_Lightbox?.value === 'true');
+          this.mapTitle.set(keyValues.Map_Title?.value || null);
+          this.backgroundMapTitle.set(keyValues.Background_Map_Title?.value || null);
+
           if (keyValues.HotSpotsGeoJson?.value) {
             try {
               this.HotSpotsGeoJson.set(JSON.parse(keyValues.HotSpotsGeoJson.value));

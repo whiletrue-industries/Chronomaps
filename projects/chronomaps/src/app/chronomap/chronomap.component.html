@@ -99,6 +99,12 @@
 
                     <div class='arrow' *ngIf='currentItem.prev' (click)='state.selectedItemId = currentItem.prev.id'></div>
                     <div class='arrow rev' *ngIf='currentItem.next' (click)='state.selectedItemId = currentItem.next.id'></div>
+                    <div class='arrow-label' *ngIf='currentItem.prev && chronomap.nextBackTitlesLightbox' (click)='state.selectedItemId = currentItem.prev.id'>
+                        {{currentItem.prev.title}}
+                    </div>
+                    <div class='arrow-label rev' *ngIf='currentItem.next && chronomap.nextBackTitlesLightbox' (click)='state.selectedItemId = currentItem.next.id'>
+                        {{currentItem.next.title}}
+                    </div>
                     <div class='arrow-icon' *ngIf='currentItem.prev' (click)='state.selectedItemId = currentItem.prev.id'>
                         <app-media-icon [type]='currentItem.prev.type' color='white' [outline]='false'></app-media-icon>
                     </div>
