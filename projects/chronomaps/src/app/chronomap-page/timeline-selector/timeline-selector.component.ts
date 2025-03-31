@@ -56,7 +56,6 @@ export class TimelineSelectorComponent implements AfterViewInit, OnInit {
 
   ngAfterViewInit(): void {
     this.chronomap.ready.subscribe(() => {
-      console.log('ININININI1', this.mapEl.nativeElement, this.position);
       this.mapHandler.initSelectorMap(this.mapEl.nativeElement, this.position);
     });
   }

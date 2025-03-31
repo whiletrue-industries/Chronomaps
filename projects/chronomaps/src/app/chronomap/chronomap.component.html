@@ -5,6 +5,9 @@
         </div>
         <app-map-selector *ngIf='mapSelector.showMapSelector' [chronomap]='chronomap' [mapHandler]='mapHandler' [position]='mapHandler.lastMapState'></app-map-selector>
         <app-timeline-selector *ngIf='mapSelector.showTimelineSelector' [chronomap]='chronomap' [mapHandler]='mapHandler' [position]='mapSelector.selectedGeo'></app-timeline-selector>
+        <div class='map-title' *ngIf='chronomap.backgroundMapTitle()' [style.color]='chronomap.primaryColor()'>
+            {{chronomap.backgroundMapTitle()}}
+        </div>
     </div>
     @if (!chronomap.disableTimeline()) {
         <app-time-line #timeLine *ngIf='timelineState() !== null' 
@@ -17,6 +20,9 @@
                             [style.border-color]='chronomap.primaryColor()' #detail>
             <div class='detail-map' [style.width]='baseWidthPx'>
                 <div #detailMapEl></div>
+                <div class='map-title' *ngIf='chronomap.mapTitle()' [style.color]='chronomap.secondaryColor()'>
+                    {{chronomap.mapTitle()}}
+                </div>
             </div>
             <div class='content' [style.background-color]='this.mapMode === "Map" ? "#00000000" : chronomap.primaryColor() + "66"'
                 [class.map-mode]='this.mapMode === "Map"'

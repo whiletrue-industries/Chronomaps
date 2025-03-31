@@ -36,7 +36,7 @@
             .main-map {
                 width: 100%;
                 height: 100%;
-                & > div {
+                & > div:not(.map-title) {
                     width: 100%;
                     height: 100%;    
                 }
@@ -760,6 +760,25 @@
         }
     }
 
+    .map-title {
+        height: fit-content !important;
+        width: max-content !important;
+        position: absolute;
+        z-index: 1;
+        .desktop({
+            bottom: 16px;
+            left: 16px;
+        });
+        .mobile({
+            bottom: 80px;
+            left: 8px;
+        });
+        font-weight: 700;
+        .font-manrope;
+        padding: 4px 8px;
+        background-color: white;
+        border-radius: 4px;
+    }
     app-map-selector, app-timeline-selector {
         width: 100%;
         height: 100%;
