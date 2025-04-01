@@ -57,8 +57,15 @@
                     <div class='target-icon' #targetIcon>
                         <app-media-icon [type]='currentItem.type' [color]='chronomap.primaryColor()'></app-media-icon>
                     </div>
-                    <div class='description-toggle' [style.border-color]='chronomap.primaryColor()'>
-                        <div class='description-toggle-button' (click)='toggleDescriptionMode()' [class.more]='this.mapMode === "More"'></div>
+                    <div class='description-toggle' [style.border-color]='chronomap.primaryColor()'
+                        [class.current-title-visible]='chronomap.currentTitleLightbox()'
+                    >
+                        @if (chronomap.currentTitleLightbox()) {
+                            <div class='title'>{{currentItem.title}}</div>
+                        }
+                        <div class='description-toggle-button' (click)='toggleDescriptionMode()' 
+                             [class.more]='this.mapMode === "More"'
+                        ></div>
                         <div class='date'>{{currentItem.formattedPostTimestamp}}</div>
                         <div class='backdrop'></div>
                     </div>

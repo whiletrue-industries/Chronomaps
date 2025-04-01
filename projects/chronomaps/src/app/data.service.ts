@@ -102,6 +102,7 @@ export class ChronomapDatabase extends BaserowDatabase {
   disableTimeline = signal<boolean>(false);
   imageItemMarkers = signal<boolean>(true);
   nextBackTitlesLightbox = signal<boolean>(false);
+  currentTitleLightbox = signal<boolean>(false);
 
   // MapBox
   mapStyle = signal<string>('');
@@ -175,6 +176,7 @@ export class ChronomapDatabase extends BaserowDatabase {
           this.imageItemMarkers.set(keyValues.Image_Item_Markers?.value === 'true');
 
           this.nextBackTitlesLightbox.set(keyValues.Next_Back_Titles_Lightbox?.value === 'true');
+          this.currentTitleLightbox.set(keyValues.Current_Title_Lightbox?.value === 'true')
           this.mapTitle.set(keyValues.Map_Title?.value || null);
           this.backgroundMapTitle.set(keyValues.Background_Map_Title?.value || null);
 
