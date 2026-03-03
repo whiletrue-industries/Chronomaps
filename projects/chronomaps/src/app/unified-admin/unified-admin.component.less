@@ -1,0 +1,338 @@
+@import '../../common.less';
+
+:host {
+    display: block;
+    height: 100%;
+    overflow-y: auto;
+    background: #f4f6f8;
+    .font-manrope;
+}
+
+.admin-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 28px 24px 60px;
+}
+
+/* ── Header ────────────────────────────────────────── */
+.admin-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 18px;
+    border-bottom: 2px solid @color-gray-5;
+
+    h1 {
+        margin: 0;
+        font-size: 26px;
+        font-weight: 700;
+        color: @gray1;
+    }
+
+    .readonly-badge {
+        background: #e8f4fd;
+        color: #1565c0;
+        padding: 4px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        border: 1px solid #bbdefb;
+        letter-spacing: 0.2px;
+    }
+}
+
+/* ── Loading ───────────────────────────────────────── */
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    color: @color-gray-3;
+
+    .spinner {
+        width: 42px;
+        height: 42px;
+        border: 3px solid @color-gray-5;
+        border-top-color: #1976d2;
+        border-radius: 50%;
+        animation: admin-spin 0.75s linear infinite;
+        margin-bottom: 18px;
+    }
+
+    p {
+        font-size: 16px;
+        margin: 0;
+    }
+}
+
+@keyframes admin-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ── Error ─────────────────────────────────────────── */
+.error-state {
+    background: #ffebee;
+    border: 1px solid #ffcdd2;
+    border-radius: 8px;
+    padding: 16px 20px;
+    color: #c62828;
+    font-size: 15px;
+    margin-bottom: 20px;
+}
+
+/* ── Filters ───────────────────────────────────────── */
+.filters-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    background: @color-white;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid @color-gray-5;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+
+        label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: @color-gray-3;
+        }
+
+        select {
+            padding: 8px 12px;
+            border: 1px solid @color-gray-5;
+            border-radius: 6px;
+            font-size: 14px;
+            color: @gray1;
+            background: @color-white;
+            cursor: pointer;
+            min-width: 200px;
+            .font-manrope;
+
+            &:focus {
+                border-color: #1976d2;
+                outline: none;
+            }
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+
+            .chip {
+                padding: 5px 13px;
+                border-radius: 20px;
+                font-size: 13px;
+                font-weight: 500;
+                cursor: pointer;
+                border: 1px solid @color-gray-5;
+                background: @color-white;
+                color: @gray1;
+                transition: background 0.12s ease, border-color 0.12s ease;
+                user-select: none;
+
+                &:hover {
+                    background: #f0f0f0;
+                }
+
+                &.active {
+                    background: @gray1;
+                    color: @color-white;
+                    border-color: @gray1;
+                }
+
+                &.status-draft.active    { background: #757575; border-color: #757575; }
+                &.status-review.active   { background: #e65100; border-color: #e65100; }
+                &.status-published.active { background: #2e7d32; border-color: #2e7d32; }
+            }
+        }
+
+        &.search-group {
+            flex: 1;
+            min-width: 220px;
+
+            input {
+                padding: 8px 12px;
+                border: 1px solid @color-gray-5;
+                border-radius: 6px;
+                font-size: 14px;
+                color: @gray1;
+                width: 100%;
+                .font-manrope;
+
+                &:focus {
+                    border-color: #1976d2;
+                    outline: none;
+                }
+            }
+        }
+    }
+}
+
+/* ── Summary ───────────────────────────────────────── */
+.summary-bar {
+    font-size: 13px;
+    color: @color-gray-3;
+    margin-bottom: 12px;
+    padding: 0 4px;
+
+    strong {
+        color: @gray1;
+    }
+}
+
+/* ── Items list ────────────────────────────────────── */
+.items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: @color-gray-3;
+        font-size: 15px;
+        background: @color-white;
+        border-radius: 8px;
+        border: 1px solid @color-gray-5;
+    }
+
+    .item-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        background: @color-white;
+        border: 1px solid @color-gray-5;
+        border-radius: 6px;
+        padding: 12px 16px;
+        transition: background 0.1s ease;
+
+        &:hover {
+            background: #f9fafb;
+        }
+
+        /* Workspace › Chronomap column */
+        .item-origin {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 160px;
+            max-width: 200px;
+            flex-shrink: 0;
+
+            .workspace-badge {
+                background: #e8eaf6;
+                color: #283593;
+                padding: 3px 8px;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: 600;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .origin-sep {
+                display: none;
+            }
+
+            .chronomap-name {
+                font-size: 12px;
+                color: @color-gray-2;
+                font-weight: 500;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                padding-left: 2px;
+            }
+        }
+
+        /* Main content column */
+        .item-details {
+            flex: 1;
+            min-width: 0;
+
+            .item-title {
+                font-size: 15px;
+                font-weight: 600;
+                color: @gray1;
+                margin-bottom: 6px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .item-meta {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 4px;
+
+                .type-badge {
+                    padding: 2px 8px;
+                    border-radius: 4px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    background: #e3f2fd;
+                    color: #1565c0;
+                    text-transform: capitalize;
+                }
+
+                .status-badge {
+                    padding: 2px 8px;
+                    border-radius: 4px;
+                    font-size: 12px;
+                    font-weight: 600;
+
+                    &.status-published { background: #e8f5e9; color: #2e7d32; }
+                    &.status-review    { background: #fff3e0; color: #e65100; }
+                    &.status-draft     { background: #f5f5f5; color: #757575; }
+                }
+
+                .item-date {
+                    font-size: 13px;
+                    color: @color-gray-3;
+                }
+
+                .item-authors {
+                    font-size: 13px;
+                    color: @color-gray-3;
+                }
+            }
+
+            .item-notes {
+                font-size: 13px;
+                color: @color-gray-3;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+        }
+
+        /* Thumbnail column */
+        .item-thumbnail {
+            flex-shrink: 0;
+            width: 64px;
+            height: 64px;
+
+            img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                border-radius: 5px;
+                border: 1px solid @color-gray-5;
+            }
+        }
+    }
+}

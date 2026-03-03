@@ -4,8 +4,10 @@ import { DirectoryPageComponent } from './directory-page/directory-page.componen
 import { ChronomapPageComponent } from './chronomap-page/chronomap-page.component';
 import { AppComponent } from './app.component';
 import { HomepageComponent } from './homepage/homepage.component';
+import { UnifiedAdminComponent } from './unified-admin/unified-admin.component';
 
 const routes: Routes = [
+  {path: 'admin', component: UnifiedAdminComponent},
   {path: ':dbid/:slug', component: ChronomapPageComponent},
   {path: ':dbid', component: DirectoryPageComponent},
   {path: '', component: HomepageComponent},
