@@ -29,12 +29,10 @@ import { RtlDetectDirective } from './rtl-detect.directive';
 import { ContentNoteComponent } from './content/content-note/content-note.component';
 import { TimelineSelectorComponent } from './chronomap-page/timeline-selector/timeline-selector.component';
 import { ImageIconComponent } from "./image-icon/image-icon.component";
-import { UnifiedAdminComponent } from './unified-admin/unified-admin.component';
 
 @NgModule({ declarations: [
         AppComponent,
         ChronomapPageComponent,
-        UnifiedAdminComponent,
         InfobarComponent,
         ContentAudioComponent,
         ContentVideoComponent,
