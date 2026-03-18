@@ -19,7 +19,10 @@ export abstract class MapHandler<T, M> {
   
   itemSelected = new Subject<TimelineItem>();
   itemHovered = new Subject<TimelineItem | null>();
+  itemDragged = new Subject<{item: TimelineItem, lat: number, lon: number}>();
   selectorMapMoved = new Subject<{geo: string, position: FlyToOptions}>();
+
+  canDragItem: ((item: TimelineItem) => boolean) | null = null;
 
   // Internal
   syncing: boolean;
@@ -90,7 +93,7 @@ export abstract class MapHandler<T, M> {
   abstract mapJumpTo(map: T, options: FlyToOptions): void;
   abstract mapFitBounds(map: T, bounds: BoundsOptions): void;
   abstract mapApplyLayers(map: T, mapLayers: string[], offMapLayers: string[]): void;
-  abstract markerCreate(el: HTMLElement, coordinates: LatLon, map: T): M;
+  abstract markerCreate(el: HTMLElement, coordinates: LatLon, map: T, draggable?: boolean): M;
   abstract markerRemove(marker: M): void;
   abstract pauseSync(seconds: number): void;
   abstract processFlyToOptions(options: FlyToOptions): void;
@@ -164,6 +167,7 @@ export abstract class MapHandler<T, M> {
     this.markers.forEach((marker) => {
       this.markerRemove(marker);
     });
+    this.markers = [];
     timer(100).subscribe(() => {
       const conf: {el: HTMLElement, map: T}[] = [
         {el: this.baseMarkersEl.nativeElement, map: this.baseMap},
@@ -187,9 +191,18 @@ export abstract class MapHandler<T, M> {
           clonedElement.addEventListener('mouseleave', () => {
             this.itemHovered.next(null);
           });
-          this.markers.push(this.markerCreate(clonedElement, coordinates, c.map));
+          const draggable = !!(this.canDragItem && this.canDragItem(item));
+          const marker = this.markerCreate(clonedElement, coordinates, c.map, draggable);
+          if (draggable) {
+            this.onMarkerDragEnd(marker, item);
+          }
+          this.markers.push(marker);
         }
       }
     });
+  }
+
+  protected onMarkerDragEnd(marker: M, item: TimelineItem): void {
+    // Override in subclasses to handle drag end events
   }
 }

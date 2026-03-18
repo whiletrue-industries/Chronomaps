@@ -1,11 +1,12 @@
-import { Component, OnInit, effect, signal } from '@angular/core';
+import { Component, OnDestroy, effect, signal } from '@angular/core';
 import { ChronomapDatabase, DataService } from '../data.service';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
-import { delay, filter, first, map, switchMap, tap, timer } from 'rxjs';
+import { delay, filter, first, interval, map, switchMap, tap, timer } from 'rxjs';
 import { StateService } from '../state.service';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { marked } from 'marked';
 import { LayoutService } from '../layout.service';
+import { AuthService } from '../auth.service';
 
 @UntilDestroy()
 @Component({
@@ -14,7 +15,7 @@ import { LayoutService } from '../layout.service';
     styleUrls: ['./chronomap-page.component.less'],
     standalone: false
 })
-export class ChronomapPageComponent {
+export class ChronomapPageComponent implements OnDestroy {
 
   // @Input() hideHeader = false;
   LOCAL_STORAGE_KEY = 'chronomap-info-';
@@ -30,10 +31,14 @@ export class ChronomapPageComponent {
   sortFilterOpen = false;
   mobileMenu = false;
 
+  // Drag mode countdown
+  dragCountdownSeconds = signal<number>(0);
+  private countdownInterval: any = null;
+
   marked = marked;
 
   constructor(private data: DataService, private route: ActivatedRoute, private router: Router, 
-      private state: StateService, public layout: LayoutService) {
+      private state: StateService, public layout: LayoutService, public auth: AuthService) {
     this.route.params.pipe(
       first(),
       tap((params) => {
@@ -65,7 +70,92 @@ export class ChronomapPageComponent {
       })
     ).subscribe(({fragment, params}) => {
       this.state.initFromUrl(fragment, params);
+      this.auth.initFromParams(params);
     });
+    // Also read URL params on initial load
+    const initialUrl = new URL('http://example.com' + this.router.url);
+    const initialParams = Object.fromEntries(initialUrl.searchParams);
+    this.auth.initFromParams(initialParams);
+    // Countdown timer
+    this.countdownInterval = setInterval(() => {
+      const chronomap = this.chronomap();
+      if (!chronomap) {
+        this.dragCountdownSeconds.set(0);
+        return;
+      }
+      const expiry = chronomap.drag_all_expiry();
+      if (!expiry) {
+        this.dragCountdownSeconds.set(0);
+        return;
+      }
+      const remaining = Math.max(0, Math.floor((expiry.getTime() - Date.now()) / 1000));
+      this.dragCountdownSeconds.set(remaining);
+      if (remaining === 0) {
+        chronomap.drag_all_expiry.set(null);
+      }
+    }, 1000);
+    // Poll for drag_all changes every 30 seconds
+    interval(30000).pipe(
+      untilDestroyed(this),
+    ).subscribe(() => {
+      const chronomap = this.chronomap();
+      if (chronomap) {
+        chronomap.refreshDragAllExpiry().subscribe();
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+    }
+  }
+
+  get isDragModeActive(): boolean {
+    const chronomap = this.chronomap();
+    return !!chronomap && this.auth.isDragAllActive(chronomap);
+  }
+
+  get isAdmin(): boolean {
+    const chronomap = this.chronomap();
+    return !!chronomap && this.auth.isAdmin(chronomap);
+  }
+
+  get hasItemKey(): boolean {
+    return !!this.auth.itemKey();
+  }
+
+  get dragCountdownFormatted(): string {
+    const total = this.dragCountdownSeconds();
+    const minutes = Math.floor(total / 60);
+    const seconds = total % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  enableDragMode() {
+    const chronomap = this.chronomap();
+    if (!chronomap) return;
+    const expiry = new Date(Date.now() + 15 * 60 * 1000);
+    chronomap.setDragAllExpiry(expiry).subscribe();
+  }
+
+  disableDragMode() {
+    const chronomap = this.chronomap();
+    if (!chronomap) return;
+    chronomap.setDragAllExpiry(null).subscribe();
+  }
+
+  adjustDragTime(minutes: number) {
+    const chronomap = this.chronomap();
+    if (!chronomap) return;
+    const expiry = chronomap.drag_all_expiry();
+    if (!expiry) return;
+    const newExpiry = new Date(expiry.getTime() + minutes * 60 * 1000);
+    if (newExpiry > new Date()) {
+      chronomap.setDragAllExpiry(newExpiry).subscribe();
+    } else {
+      chronomap.setDragAllExpiry(null).subscribe();
+    }
   }
 
   loadChronomap(chronomaps: ChronomapDatabase[], slug: string | null) {

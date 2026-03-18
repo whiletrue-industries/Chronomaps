@@ -50,7 +50,32 @@
             </div>
         </div>
     </div>
+
+    <!-- Drag Mode Controls -->
+    <div class='drag-mode-bar' *ngIf='isAdmin || isDragModeActive || hasItemKey' [style.background-color]='chronomap()?.primaryColor()'>
+        <div class='drag-mode-content'>
+            <!-- Admin controls -->
+            <ng-container *ngIf='isAdmin'>
+                <span class='drag-mode-label' *ngIf='!isDragModeActive'>Drag Mode</span>
+                <button class='drag-btn drag-btn-enable' *ngIf='!isDragModeActive' (click)='enableDragMode()'>
+                    Enable (15 min)
+                </button>
+                <ng-container *ngIf='isDragModeActive'>
+                    <span class='drag-mode-label'>Drag Mode: <strong>{{dragCountdownFormatted}}</strong></span>
+                    <button class='drag-btn drag-btn-adjust' (click)='adjustDragTime(-5)'>−5 min</button>
+                    <button class='drag-btn drag-btn-adjust' (click)='adjustDragTime(5)'>+5 min</button>
+                    <button class='drag-btn drag-btn-stop' (click)='disableDragMode()'>Stop</button>
+                </ng-container>
+            </ng-container>
+            <!-- Viewer countdown (non-admin) -->
+            <ng-container *ngIf='!isAdmin && isDragModeActive'>
+                <span class='drag-mode-label'>🖱️ Drag mode active — <strong>{{dragCountdownFormatted}}</strong> remaining</span>
+            </ng-container>
+            <!-- Item key holder notice -->
+            <ng-container *ngIf='!isAdmin && !isDragModeActive && hasItemKey'>
+                <span class='drag-mode-label'>🖱️ You can drag your items on the map</span>
+            </ng-container>
+        </div>
+    </div>
 </div>
-
-
 

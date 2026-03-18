@@ -2,8 +2,9 @@ import { Injectable, effect, signal } from '@angular/core';
 
 import { BASEROW_ENDPOINT, BASEROW_ADMIN_TOKEN } from 'CONFIGURATION';
 import { BaserowDatabase } from './baserow/baserow-database';
+import { BaserowTable } from './baserow/baserow-table';
 import { HttpClient } from '@angular/common/http';
-import { Observable, ReplaySubject, Subject, forkJoin, from, map, switchMap, tap } from 'rxjs';
+import { Observable, ReplaySubject, Subject, forkJoin, from, map, of, switchMap, tap } from 'rxjs';
 import dayjs from 'dayjs';
 import { MapUtils } from './map-handler/map-utils';
 
@@ -126,6 +127,14 @@ export class ChronomapDatabase extends BaserowDatabase {
   allContentItems: ContentItem[];
   authors = signal<{[key: string]: Author}>({});
 
+  // Drag mode
+  adminKey = signal<string>('');
+  drag_all_expiry = signal<Date | null>(null);
+
+  // Internal table references for write operations
+  private settingsTable_: BaserowTable | null = null;
+  private contentTable_: BaserowTable | null = null;
+
   ready = new ReplaySubject<boolean>(1);
   ready_ = false;
 
@@ -144,9 +153,12 @@ export class ChronomapDatabase extends BaserowDatabase {
     return this.fetchTables().pipe(
       tap(() => {
         this.getTable('Settings').subscribe((settingsTable) => {
+          if (settingsTable) {
+            this.settingsTable_ = settingsTable;
+          }
           const keyValues: any = {};
           settingsTable?.rows.forEach((element: any) => {
-            keyValues[element.Key] = {value: element.Value, images: element.Image};
+            keyValues[element.Key] = {value: element.Value, images: element.Image, id: element.id};
           });
           if (keyValues.Title?.value && keyValues.Title?.value !== 'New Chronomap') {
             this.title.set(keyValues.Title?.value || '');
@@ -189,8 +201,61 @@ export class ChronomapDatabase extends BaserowDatabase {
           } else {
             this.HotSpotsGeoJson.set(null);
           }
+
+          // Drag mode settings
+          this.adminKey.set(keyValues.Admin_Key?.value || '');
+          const expiryValue = keyValues.Drag_All_Expiry?.value;
+          this.drag_all_expiry.set(expiryValue ? dayjs(expiryValue).toDate() : null);
         });    
       }),
+    );
+  }
+
+  refreshDragAllExpiry(): Observable<any> {
+    if (!this.settingsTable_) {
+      return of(null);
+    }
+    return this.settingsTable_.fetchRows(this.http, true).pipe(
+      tap((table: BaserowTable) => {
+        const expiryRow = table.rows.find((r: any) => r.Key === 'Drag_All_Expiry');
+        const expiryValue = expiryRow?.Value;
+        this.drag_all_expiry.set(expiryValue ? dayjs(expiryValue).toDate() : null);
+      })
+    );
+  }
+
+  setDragAllExpiry(expiry: Date | null): Observable<any> {
+    if (!this.settingsTable_) {
+      return of(null);
+    }
+    const value = expiry ? expiry.toISOString() : '';
+    const expiryRow = this.settingsTable_.rows.find((r: any) => r.Key === 'Drag_All_Expiry');
+    if (expiryRow) {
+      return this.settingsTable_.updateRow(this.http, expiryRow.id, {Value: value}).pipe(
+        tap(() => {
+          this.drag_all_expiry.set(expiry);
+          // Update cached row value
+          expiryRow.Value = value;
+        })
+      );
+    } else {
+      return this.settingsTable_.createRow(this.http, {Key: 'Drag_All_Expiry', Value: value}).pipe(
+        tap((newRow: any) => {
+          this.drag_all_expiry.set(expiry);
+          this.settingsTable_!.rows.push(newRow);
+        })
+      );
+    }
+  }
+
+  updateItemGeo(item: ContentItem, geo: string): Observable<any> {
+    if (!this.contentTable_) {
+      return of(null);
+    }
+    return this.contentTable_.updateRow(this.http, item.id, {Geo: geo}).pipe(
+      tap(() => {
+        item.geo = geo;
+      })
     );
   }
 
@@ -206,6 +271,9 @@ export class ChronomapDatabase extends BaserowDatabase {
       this.getTable('Content', force),
     ]).pipe(
       map(([mapLayersTable, authorsTable, contentTable]) => {
+        if (contentTable) {
+          this.contentTable_ = contentTable;
+        }
         this.allLayers = [];
         const layers: any = {};
         mapLayersTable?.rows.forEach((row: any) => {

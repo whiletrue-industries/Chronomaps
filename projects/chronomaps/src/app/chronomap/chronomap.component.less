@@ -821,3 +821,15 @@
         }
     }
 }
+
+:host {
+    &.drag-mode {
+        .mapmarker {
+            cursor: grab;
+
+            &:active {
+                cursor: grabbing;
+            }
+        }
+    }
+}

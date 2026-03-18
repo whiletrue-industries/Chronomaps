@@ -6,7 +6,7 @@ export class BaserowTable {
     rows: any[] = [];
     hasRows = false;
 
-    constructor(private endpoint: string, private token: string, private id: number, public name: string) {
+    constructor(private endpoint: string, public token: string, public id: number, public name: string) {
     }
 
     fetchRows(http: HttpClient, force = false) {
@@ -26,5 +26,21 @@ export class BaserowTable {
         } else {
             return from([this]);
         }
+    }
+
+    updateRow(http: HttpClient, rowId: number, data: any) {
+        return http.patch(`${this.endpoint}/api/database/rows/table/${this.id}/${rowId}/?user_field_names=true`, data, {
+            headers: {
+                Authorization: `Token ${this.token}`
+            }
+        });
+    }
+
+    createRow(http: HttpClient, data: any) {
+        return http.post(`${this.endpoint}/api/database/rows/table/${this.id}/?user_field_names=true`, data, {
+            headers: {
+                Authorization: `Token ${this.token}`
+            }
+        });
     }
 }

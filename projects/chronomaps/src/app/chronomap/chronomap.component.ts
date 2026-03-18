@@ -9,8 +9,9 @@ import { State, StateService } from '../state.service';
 import { LayoutService } from '../layout.service';
 import { marked } from 'marked';
 import { getMapHandler } from '../map-handler/map-handler';
-import { FlyToOptions } from '../map-handler/map-utils';
+import { FlyToOptions, MapUtils } from '../map-handler/map-utils';
 import { MapHandler } from '../map-handler/map-handler-base';
+import { AuthService } from '../auth.service';
 
 @UntilDestroy()
 @Component({
@@ -65,7 +66,7 @@ export class ChronomapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(
     private titleSvc: Title, private sanitizer: DomSanitizer, public mapSelector: MapSelectorService, public state: StateService,
-    private layout: LayoutService, private el: ElementRef
+    private layout: LayoutService, private el: ElementRef, public auth: AuthService
   ) {
     this.itemActivations.pipe(
       untilDestroyed(this),
@@ -99,6 +100,7 @@ export class ChronomapComponent implements OnInit, AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     this.chronomap.ready.subscribe(() => {
       this.mapHandler = getMapHandler(this, this.layout, this.chronomap);
+      this.mapHandler.canDragItem = (item: TimelineItem) => this.auth.canDragItem(item, this.chronomap);
       this.resizeObserver = new ResizeObserver(() => {
         timer(0).subscribe(() => {
           this.syncWidths();
@@ -114,6 +116,16 @@ export class ChronomapComponent implements OnInit, AfterViewInit, OnDestroy {
         untilDestroyed(this),
       ).subscribe((item: TimelineItem) => {
         this.itemSelected(item);
+      });
+      this.mapHandler.itemDragged.pipe(
+        untilDestroyed(this),
+      ).subscribe(({item, lat, lon}) => {
+        const currentGeo = MapUtils.parseMapView(item.geo);
+        const params = [currentGeo.zoom, lat, lon, currentGeo.bearing, currentGeo.pitch];
+        const geo = 'https://labs.mapbox.com/location-helper/#' + params.map(p => Number.isFinite(p) ? p?.toString() : '').join('/');
+        this.chronomap.updateItemGeo(item, geo).subscribe(() => {
+          console.log('Updated geo for', item.title);
+        });
       });
       this.mapHandler.init(
         this.baseMapEl, this.detailMapEl,

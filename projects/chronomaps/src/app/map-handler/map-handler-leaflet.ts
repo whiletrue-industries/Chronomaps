@@ -1,6 +1,7 @@
 import { timer } from 'rxjs';
 import { MapHandler } from './map-handler-base';
 import { BoundsOptions, FlyToOptions, MapUtils } from './map-utils';
+import { TimelineItem } from '../data.service';
 import * as L from 'leaflet';
 import 'leaflet.sync';
 
@@ -148,13 +149,20 @@ export class MapHandlerLeaflet extends MapHandler<L.Map, L.Marker> {
     map.fitBounds(mpBounds, {animate: false, padding: [50, 50]});
   }
 
-  override markerCreate(el: HTMLElement, coordinates: { lat: number; lon: number }, map: L.Map): L.Marker {
+  override markerCreate(el: HTMLElement, coordinates: { lat: number; lon: number }, map: L.Map, draggable = false): L.Marker {
     const icon = L.divIcon({
       html: el,
       iconSize: [el.offsetWidth, el.offsetHeight],
       className: 'leaflet-marker',
     });
-    return L.marker([coordinates.lat, coordinates.lon], {icon}).addTo(map);
+    return L.marker([coordinates.lat, coordinates.lon], {icon, draggable}).addTo(map);
+  }
+
+  override onMarkerDragEnd(marker: L.Marker, item: TimelineItem): void {
+    marker.on('dragend', () => {
+      const pos = marker.getLatLng();
+      this.itemDragged.next({item, lat: pos.lat, lon: pos.lng});
+    });
   }
 
   override markerRemove(marker: L.Marker): void {

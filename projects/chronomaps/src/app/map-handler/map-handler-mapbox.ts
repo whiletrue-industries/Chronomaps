@@ -1,6 +1,7 @@
 import { MapHandler } from './map-handler-base';
 import { BoundsOptions, FlyToOptions, MapUtils } from './map-utils';
 import { timer } from 'rxjs';
+import { TimelineItem } from '../data.service';
 
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import mapboxgl, { Map } from "mapbox-gl";
@@ -150,10 +151,17 @@ export class MapHandlerMapbox extends MapHandler<mapboxgl.Map, mapboxgl.Marker> 
     map.fitBounds(mpBounds, {animate: false, padding: 50});
   }
 
-  override markerCreate(el: HTMLElement, coordinates: { lat: number; lon: number }, map: Map): mapboxgl.Marker {
-    return new mapboxgl.Marker(el)
+  override markerCreate(el: HTMLElement, coordinates: { lat: number; lon: number }, map: Map, draggable = false): mapboxgl.Marker {
+    return new mapboxgl.Marker(el, {draggable})
       .setLngLat(coordinates)
       .addTo(map);
+  }
+
+  override onMarkerDragEnd(marker: mapboxgl.Marker, item: TimelineItem): void {
+    marker.on('dragend', () => {
+      const lngLat = marker.getLngLat();
+      this.itemDragged.next({item, lat: lngLat.lat, lon: lngLat.lng});
+    });
   }
 
   override markerRemove(marker: mapboxgl.Marker): void {

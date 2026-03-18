@@ -1,4 +1,4 @@
-<div class='wrapper'>
+<div class='wrapper' [class.drag-mode]='auth.isDragAllActive(chronomap) || auth.isAdmin(chronomap) || !!auth.itemKey()'>
     <div class='base-map'>
         <div class='main-map'>
             <div #baseMapEl></div>
