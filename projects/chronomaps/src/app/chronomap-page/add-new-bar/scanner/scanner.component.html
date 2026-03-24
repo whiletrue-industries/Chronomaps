@@ -1,0 +1,75 @@
+<div class="scanner-wrap">
+
+  <!-- Camera error state -->
+  <div class="camera-error" *ngIf="cameraError">
+    <p>Camera access is required to scan an image.</p>
+    <p>Please allow camera access and try again.</p>
+    <button class="btn-secondary" (click)="cancel()">Go Back</button>
+  </div>
+
+  <!-- Main view: video preview OR captured-image confirmation -->
+  <ng-container *ngIf="!cameraError">
+
+    <!-- Hidden video element – used as source for canvas drawing -->
+    <video #videoEl
+           autoplay
+           playsinline
+           muted
+           [style.display]="'none'">
+    </video>
+
+    <!-- Canvas: renders video feed OR captured image + overlay -->
+    <canvas #canvasEl
+            class="main-canvas"
+            (pointerdown)="onPointerDown($event)"
+            (pointermove)="onPointerMove($event)"
+            (pointerup)="onPointerUp($event)"
+            (pointercancel)="onPointerUp($event)"
+            [class.draggable]="phase === 'confirming' || cropMode === 'manual'">
+    </canvas>
+
+    <!-- ── VIDEO PHASE controls ── -->
+    <ng-container *ngIf="phase === 'video'">
+
+      <div class="hint" *ngIf="cropMode === 'auto'">
+        Point at the document. The white border will be detected automatically.
+      </div>
+      <div class="hint" *ngIf="cropMode === 'manual'">
+        Drag the corners to set the crop area, then tap Capture.
+      </div>
+
+      <div class="controls">
+        <button class="btn-secondary" (click)="cancel()">Cancel</button>
+
+        <button class="btn-capture"
+                [disabled]="isCapturing"
+                (click)="capture()">
+          <span *ngIf="!isCapturing">●</span>
+          <span *ngIf="isCapturing">…</span>
+        </button>
+
+        <button class="btn-secondary"
+                *ngIf="cropMode === 'auto'"
+                (click)="switchToManual()">
+          Manual
+        </button>
+        <div class="btn-placeholder" *ngIf="cropMode === 'manual'"></div>
+      </div>
+
+    </ng-container>
+
+    <!-- ── CONFIRM PHASE controls ── -->
+    <ng-container *ngIf="phase === 'confirming'">
+
+      <div class="hint">Drag the handles to adjust the crop, then tap Use Photo.</div>
+
+      <div class="controls">
+        <button class="btn-secondary" (click)="retake()">Retake</button>
+        <button class="btn-primary"   (click)="confirmCrop()">Use Photo</button>
+      </div>
+
+    </ng-container>
+
+  </ng-container>
+
+</div>

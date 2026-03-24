@@ -15,6 +15,7 @@ import { ContentWikipediaComponent } from './content/content-wikipedia/content-w
 import { AudioPlayerComponent } from './content/content-audio/audio-player/audio-player.component';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { AddNewBarComponent } from './chronomap-page/add-new-bar/add-new-bar.component';
+import { ScannerComponent } from './chronomap-page/add-new-bar/scanner/scanner.component';
 import { FormsModule } from '@angular/forms';
 import { MapSelectorComponent } from './chronomap-page/map-selector/map-selector.component';
 import { LayersBarComponent } from './layers-bar/layers-bar.component';
@@ -44,6 +45,7 @@ import { ImageIconComponent } from "./image-icon/image-icon.component";
         ContentNoteComponent,
         AudioPlayerComponent,
         AddNewBarComponent,
+        ScannerComponent,
         LayersBarComponent,
         MapSelectorComponent,
         TimelineSelectorComponent,

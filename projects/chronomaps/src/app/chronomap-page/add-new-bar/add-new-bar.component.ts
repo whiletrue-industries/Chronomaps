@@ -40,6 +40,11 @@ export class AddNewBarComponent implements OnInit {
   nonce: string;
   subscription: Subscription | null = null;
 
+  // Scanner state
+  scannerActive = false;
+  scannedImageUrl: string | null = null;
+  uploadingImage = false;
+
   constructor(private sanitizer: DomSanitizer, public mapSelector: MapSelectorService, private data: DataService) { }
 
   ngOnInit(): void {
@@ -52,7 +57,36 @@ export class AddNewBarComponent implements OnInit {
   selectCT(ct: string, ctName: string) {
     this.contentType = ct;
     this.contentTypeName = ctName;
-    this.slide += 1;
+    if (ct === 'image') {
+      // Show scanner before proceeding to location/time selection
+      this.scannerActive = true;
+    } else {
+      this.slide += 1;
+    }
+  }
+
+  onScannerImageCaptured(blob: Blob) {
+    this.scannerActive = false;
+    this.uploadingImage = true;
+    this.data.uploadFile(blob).subscribe({
+      next: (result) => {
+        this.scannedImageUrl = result.url;
+        this.uploadingImage = false;
+        this.slide += 1;
+      },
+      error: (err) => {
+        console.error('Image upload failed', err);
+        // Continue without the image URL so the user is not stuck
+        this.uploadingImage = false;
+        this.slide += 1;
+      },
+    });
+  }
+
+  onScannerCancelled() {
+    this.scannerActive = false;
+    this.contentType = '';
+    this.contentTypeName = '';
   }
 
   get iframeSrc() {
@@ -74,6 +108,10 @@ export class AddNewBarComponent implements OnInit {
     url.searchParams.append('hide_Status', 'true');
     url.searchParams.append('prefill_Properties', JSON.stringify(this.selectedProperties));
     url.searchParams.append('hide_Properties', 'true');
+    if (this.scannedImageUrl) {
+      url.searchParams.append('prefill_Scanned_Image_URL', this.scannedImageUrl);
+      url.searchParams.append('hide_Scanned_Image_URL', 'true');
+    }
     for (const key of Object.keys(this.selectedProperties)) {
       url.searchParams.append('hide_' + key, 'true');
       url.searchParams.append('prefill_' + key, this.selectedProperties[key]);
@@ -176,5 +214,3 @@ export class AddNewBarComponent implements OnInit {
     return this.slide_;
   }
 }
-
-

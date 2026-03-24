@@ -4,6 +4,16 @@ import { BASEROW_ENDPOINT, BASEROW_ADMIN_TOKEN } from 'CONFIGURATION';
 import { BaserowDatabase } from './baserow/baserow-database';
 import { HttpClient } from '@angular/common/http';
 import { Observable, ReplaySubject, Subject, forkJoin, from, map, switchMap, tap } from 'rxjs';
+
+export interface UploadedFile {
+  url: string;
+  name: string;
+  size: number;
+  mime_type: string;
+  is_image: boolean;
+  image_width?: number;
+  image_height?: number;
+}
 import dayjs from 'dayjs';
 import { MapUtils } from './map-handler/map-utils';
 
@@ -424,5 +434,15 @@ export class DataService {
     this.currentDbId = dbId;
     this.directory = new DirectoryDatabase(dbId, this.http);
     this.directory.fetchMaps();
+  }
+
+  uploadFile(blob: Blob, filename = 'scan.jpg'): Observable<UploadedFile> {
+    const form = new FormData();
+    form.append('file', blob, filename);
+    return this.http.post<UploadedFile>(
+      `${BASEROW_ENDPOINT}/api/user-files/upload-file/`,
+      form,
+      { headers: { Authorization: `Token ${BASEROW_ADMIN_TOKEN}` } },
+    );
   }
 }

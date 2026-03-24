@@ -16,7 +16,7 @@
         <div class='header'>
             <h1>Add your perspective</h1>
             <h2 [innerHtml]='chronomap.contributeMessage()' *ngIf='chronomap.contributeMessage()'></h2>
-            <h2>Let’s indeed start by choosing the format for this perspective:</h2>
+            <h2>Let's indeed start by choosing the format for this perspective:</h2>
         </div>
         <div class='content-types' [style.color]='chronomap.primaryColor()'>
             <div class='content-type' (click)='selectCT("note", "sticky note")'>
@@ -100,7 +100,10 @@
     <div class='slide' [class.pre]='slide < 3' [class.post]='slide > 3'>
         <div class='header'>
             <h1 class='indented'>Add The Details</h1>
-            <h2>Now that we know time and space, let’s add the details of your {{contentTypeName}}</h2>
+            <h2>Now that we know time and space, let's add the details of your {{contentTypeName}}</h2>
+        </div>
+        <div class='scanned-preview' *ngIf='scannedImageUrl'>
+            <img [src]='scannedImageUrl' alt='Scanned image'>
         </div>
         <iframe [src]='iframeSrc' frameborder='0' onmousewheel='' width='100%' height='100%' *ngIf='iframeSrc'></iframe>
     </div>
@@ -123,4 +126,16 @@
         <div class='progress-item' [style.background]='slide==2 ? chronomap.primaryColor() : null'></div>
         <div class='progress-item' [style.background]='slide==3 ? chronomap.primaryColor() : null'></div>
     </ng-container>
+</div>
+
+<!-- Scanner overlay – shown when user selects "Image" content type -->
+<app-scanner *ngIf='scannerActive'
+             (imageCaptured)='onScannerImageCaptured($event)'
+             (cancelled)='onScannerCancelled()'>
+</app-scanner>
+
+<!-- Upload spinner overlay -->
+<div class='upload-overlay' *ngIf='uploadingImage'>
+    <div class='upload-spinner'></div>
+    <p>Uploading image…</p>
 </div>
