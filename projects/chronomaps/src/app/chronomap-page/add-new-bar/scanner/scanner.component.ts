@@ -17,6 +17,24 @@ interface CropRect {
 
 type ScannerPhase = 'video' | 'confirming';
 
+/** Minimum luminance (0-255) for a pixel to be counted as white/light-grey paper. */
+const PAPER_BRIGHTNESS_THRESHOLD = 175;
+
+/** Minimum fraction of pixels in a row/column that must exceed the brightness threshold
+ *  for that row/column to be considered part of the paper document. */
+const PAPER_COVERAGE_FRACTION = 0.45;
+
+/** Reject a detected crop if its normalised width or height is below this value
+ *  (avoids false-positives from tiny bright specks). */
+const MIN_DETECTION_RATIO = 0.1;
+
+/** Reject a detected crop if its normalised width or height exceeds this value
+ *  (avoids treating the whole frame as the document when it fills the view). */
+const MAX_DETECTION_RATIO = 0.97;
+
+/** Minimum normalised size for either dimension of the crop rectangle during manual dragging. */
+const MIN_CROP_SIZE = 0.05;
+
 @Component({
   selector: 'app-scanner',
   templateUrl: './scanner.component.html',
@@ -171,26 +189,22 @@ export class ScannerComponent implements OnInit, OnDestroy {
     }
 
     // Find document boundary by scanning for consistently bright rows/columns.
-    // White/light-grey paper typically has luminance > 180.
-    const THRESH = 175;
-    const COVER = 0.45; // fraction of a row/col that must be bright
-
     const col = (x: number) => {
       let cnt = 0;
-      for (let y = 0; y < SH; y++) if (gray[y * SW + x] > THRESH) cnt++;
+      for (let y = 0; y < SH; y++) if (gray[y * SW + x] > PAPER_BRIGHTNESS_THRESHOLD) cnt++;
       return cnt / SH;
     };
     const row = (y: number) => {
       let cnt = 0;
-      for (let x = 0; x < SW; x++) if (gray[y * SW + x] > THRESH) cnt++;
+      for (let x = 0; x < SW; x++) if (gray[y * SW + x] > PAPER_BRIGHTNESS_THRESHOLD) cnt++;
       return cnt / SW;
     };
 
     let left = -1, right = -1, top = -1, bottom = -1;
-    for (let x = 0; x < SW; x++) if (col(x) > COVER) { left = x; break; }
-    for (let x = SW - 1; x >= 0; x--) if (col(x) > COVER) { right = x; break; }
-    for (let y = 0; y < SH; y++) if (row(y) > COVER) { top = y; break; }
-    for (let y = SH - 1; y >= 0; y--) if (row(y) > COVER) { bottom = y; break; }
+    for (let x = 0; x < SW; x++) if (col(x) > PAPER_COVERAGE_FRACTION) { left = x; break; }
+    for (let x = SW - 1; x >= 0; x--) if (col(x) > PAPER_COVERAGE_FRACTION) { right = x; break; }
+    for (let y = 0; y < SH; y++) if (row(y) > PAPER_COVERAGE_FRACTION) { top = y; break; }
+    for (let y = SH - 1; y >= 0; y--) if (row(y) > PAPER_COVERAGE_FRACTION) { bottom = y; break; }
 
     if (left < 0 || right <= left || top < 0 || bottom <= top) {
       this.detectionConfidence = Math.max(0, this.detectionConfidence - 0.05);
@@ -201,7 +215,8 @@ export class ScannerComponent implements OnInit, OnDestroy {
     const nh = (bottom - top) / SH;
 
     // Reject if the detected area is nearly the whole frame or tiny
-    if (nw < 0.1 || nh < 0.1 || nw > 0.97 || nh > 0.97) {
+    if (nw < MIN_DETECTION_RATIO || nh < MIN_DETECTION_RATIO ||
+        nw > MAX_DETECTION_RATIO || nh > MAX_DETECTION_RATIO) {
       this.detectionConfidence = Math.max(0, this.detectionConfidence - 0.05);
       return;
     }
@@ -422,7 +437,6 @@ export class ScannerComponent implements OnInit, OnDestroy {
     const dx = (event.offsetX - this.pointerStart.x) / w;
     const dy = (event.offsetY - this.pointerStart.y) / h;
     const c = { ...this.cropAtPointerStart };
-    const MIN_SIZE = 0.05;
 
     switch (this.activeHandle) {
       case 'tl': c.x += dx; c.y += dy; c.w -= dx; c.h -= dy; break;
@@ -436,10 +450,10 @@ export class ScannerComponent implements OnInit, OnDestroy {
     }
 
     // Clamp
-    c.x = Math.max(0, Math.min(c.x, 1 - MIN_SIZE));
-    c.y = Math.max(0, Math.min(c.y, 1 - MIN_SIZE));
-    c.w = Math.max(MIN_SIZE, Math.min(c.w, 1 - c.x));
-    c.h = Math.max(MIN_SIZE, Math.min(c.h, 1 - c.y));
+    c.x = Math.max(0, Math.min(c.x, 1 - MIN_CROP_SIZE));
+    c.y = Math.max(0, Math.min(c.y, 1 - MIN_CROP_SIZE));
+    c.w = Math.max(MIN_CROP_SIZE, Math.min(c.w, 1 - c.x));
+    c.h = Math.max(MIN_CROP_SIZE, Math.min(c.h, 1 - c.y));
 
     this.crop = c;
     event.preventDefault();
