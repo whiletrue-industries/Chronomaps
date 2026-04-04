@@ -324,6 +324,7 @@ export class ChronomapComponent implements OnInit, AfterViewInit, OnDestroy {
   initialize() {
     this.chronomap.ready.pipe(
       untilDestroyed(this),
+      take(1),
       switchMap(() => this.state.state),
     ).subscribe((state) => {
       this.goto(state);

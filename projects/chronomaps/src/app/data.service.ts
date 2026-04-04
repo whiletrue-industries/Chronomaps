@@ -1,9 +1,9 @@
-import { Injectable, effect, signal } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 
-import { BASEROW_ENDPOINT, BASEROW_ADMIN_TOKEN } from 'CONFIGURATION';
-import { BaserowDatabase } from './baserow/baserow-database';
+import { CHRONOMAPS_API_ENDPOINT } from 'CONFIGURATION';
+import { ChronomapsApi } from './api/chronomaps-api';
 import { HttpClient } from '@angular/common/http';
-import { Observable, ReplaySubject, Subject, forkJoin, from, map, switchMap, tap } from 'rxjs';
+import { Observable, ReplaySubject, forkJoin, from, map, switchMap, tap } from 'rxjs';
 import dayjs from 'dayjs';
 import { MapUtils } from './map-handler/map-utils';
 
@@ -27,7 +27,7 @@ export class ContentItem {
   notes: string;
   post_timestamp: Date;
   alt_post_timestamp: Date;
-  status: 'Draft' | 'Review' | 'Published'; 
+  status: 'Draft' | 'Review' | 'Published';
   type: 'audio' | 'wikipedia' | 'instagram' | 'twitter' | 'image' | 'video' | 'news' | 'note';
   youtube_video_id: string;
   content: string;
@@ -72,10 +72,11 @@ export class TimelineItem extends ContentItem {
   formattedAuthors: string;
 }
 
-export class ChronomapDatabase extends BaserowDatabase {
+export class ChronomapDatabase {
 
   id: string;
   directoryId: number;
+  workspaceId: string;
   slug = signal<string>('');
   editor_name = signal<string>('');
   editor_email = signal<string>('');
@@ -129,67 +130,68 @@ export class ChronomapDatabase extends BaserowDatabase {
   ready = new ReplaySubject<boolean>(1);
   ready_ = false;
 
-  constructor(directoryId: number, chronomap: any, http: HttpClient) {
-    super(BASEROW_ENDPOINT, chronomap.Database_Token, chronomap.Database_ID, http);
-    this.id = chronomap.id;
+  private mapLayersData: any[] = [];
+  private authorsData: any[] = [];
+
+  constructor(directoryId: number, chronomapItem: any, private api: ChronomapsApi) {
+    this.id = chronomapItem._id;
     this.directoryId = directoryId;
-    this.title.set(chronomap.Title);
-    this.slug.set(chronomap.URL_Slug);
-    this.editor_name.set(chronomap.Editor_Name);
-    this.editor_email.set(chronomap.Editor_Email);
-    this.pitch.set(chronomap.Pitch);
+    this.workspaceId = chronomapItem.Workspace_ID || '';
+    this.title.set(chronomapItem.Title || '');
+    this.slug.set(chronomapItem.URL_Slug || chronomapItem._id || '');
+    this.editor_name.set(chronomapItem.Editor_Name || '');
+    this.editor_email.set(chronomapItem.Editor_Email || '');
+    this.pitch.set(chronomapItem.Pitch || '');
   }
 
   fetchMeta() {
-    return this.fetchTables().pipe(
-      tap(() => {
-        this.getTable('Settings').subscribe((settingsTable) => {
-          const keyValues: any = {};
-          settingsTable?.rows.forEach((element: any) => {
-            keyValues[element.Key] = {value: element.Value, images: element.Image};
-          });
-          if (keyValues.Title?.value && keyValues.Title?.value !== 'New Chronomap') {
-            this.title.set(keyValues.Title?.value || '');
-          }
-          this.subtitle.set(keyValues.Subtitle?.value || '');
-          this.infobarTitle.set(keyValues.Infobar_Title?.value || this.title());
-          this.infobarSubtitle.set(keyValues.Infobar_Subtitle?.value || this.subtitle());
-          this.infobarContent.set(keyValues.Infobar_Content?.value || '');
-          this.contributeMessage.set(keyValues.Contribute_Message?.value || '');
-          this.mapView.set(keyValues.Default_Map_View?.value || '');
-          this.logo.set(keyValues.Logo?.images?.[0]?.url || '');
-          this.thumbnail.set(keyValues.Thumbnail?.images?.[0]?.url || '');
-          this.parentLink.set(keyValues.Parent_Link?.value || '..');
-          this.mapStyle.set(keyValues.Map_Style?.value || '');
-          this.backgroundMapStyle.set(keyValues.Background_Map_Style?.value || '');
-          this.mapboxKey.set(keyValues.Mapbox_Key?.value || '');
-          this.showTooltips.set(keyValues.Show_Tooltips?.value === 'true');
-          this.altTimestampLabel.set(keyValues.Alt_Timestamp_Label?.value || '');
-          this.postDateFormat.set(keyValues.Post_Date_Format?.value || '');
-          this.altDateFormat.set(keyValues.Alt_Date_Format?.value || '');
-          this.primaryColor.set(keyValues.Primary_Color?.value || '');
-          this.secondaryColor.set(keyValues.Secondary_Color?.value || '');
-          this.newEntryForm.set(keyValues.New_Entry_Form?.value || '');
-          this.Map_BG.set(keyValues.Map_BG?.images?.[0]?.url || '');
-          this.Map_BG_Bounds.set(keyValues.Map_BG_Bounds?.value || '');
-          this.disableTimeline.set(keyValues.Disable_Timeline?.value === 'true');
-          this.imageItemMarkers.set(keyValues.Image_Item_Markers?.value === 'true');
+    return this.api.getWorkspace(this.workspaceId).pipe(
+      tap((workspace: any) => {
+        const meta = workspace;
+        if (meta.Title && meta.Title !== 'New Chronomap') {
+          this.title.set(meta.Title || '');
+        }
+        this.subtitle.set(meta.Subtitle || '');
+        this.infobarTitle.set(meta.Infobar_Title || this.title());
+        this.infobarSubtitle.set(meta.Infobar_Subtitle || this.subtitle());
+        this.infobarContent.set(meta.Infobar_Content || '');
+        this.contributeMessage.set(meta.Contribute_Message || '');
+        this.mapView.set(meta.Default_Map_View || '');
+        this.logo.set(meta.Logo || '');
+        this.thumbnail.set(meta.Thumbnail || '');
+        this.parentLink.set(meta.Parent_Link || '..');
+        this.mapStyle.set(meta.Map_Style || '');
+        this.backgroundMapStyle.set(meta.Background_Map_Style || '');
+        this.mapboxKey.set(meta.Mapbox_Key || '');
+        this.showTooltips.set(meta.Show_Tooltips === 'true');
+        this.altTimestampLabel.set(meta.Alt_Timestamp_Label || '');
+        this.postDateFormat.set(meta.Post_Date_Format || '');
+        this.altDateFormat.set(meta.Alt_Date_Format || '');
+        this.primaryColor.set(meta.Primary_Color || '');
+        this.secondaryColor.set(meta.Secondary_Color || '');
+        this.newEntryForm.set(meta.New_Entry_Form || '');
+        this.Map_BG.set(meta.Map_BG || '');
+        this.Map_BG_Bounds.set(meta.Map_BG_Bounds || '');
+        this.disableTimeline.set(meta.Disable_Timeline === 'true');
+        this.imageItemMarkers.set(meta.Image_Item_Markers === 'true');
+        this.nextBackTitlesLightbox.set(meta.Next_Back_Titles_Lightbox === 'true');
+        this.currentTitleLightbox.set(meta.Current_Title_Lightbox === 'true');
+        this.mapTitle.set(meta.Map_Title || null);
+        this.backgroundMapTitle.set(meta.Background_Map_Title || null);
 
-          this.nextBackTitlesLightbox.set(keyValues.Next_Back_Titles_Lightbox?.value === 'true');
-          this.currentTitleLightbox.set(keyValues.Current_Title_Lightbox?.value === 'true')
-          this.mapTitle.set(keyValues.Map_Title?.value || null);
-          this.backgroundMapTitle.set(keyValues.Background_Map_Title?.value || null);
-
-          if (keyValues.HotSpotsGeoJson?.value) {
-            try {
-              this.HotSpotsGeoJson.set(JSON.parse(keyValues.HotSpotsGeoJson.value));
-            } catch (e) {
-              this.HotSpotsGeoJson.set(null);
-            }
-          } else {
+        if (meta.HotSpotsGeoJson) {
+          try {
+            this.HotSpotsGeoJson.set(JSON.parse(meta.HotSpotsGeoJson));
+          } catch (e) {
             this.HotSpotsGeoJson.set(null);
           }
-        });    
+        } else {
+          this.HotSpotsGeoJson.set(null);
+        }
+
+        // MapLayers and Authors stored in workspace metadata
+        this.mapLayersData = meta.MapLayers || [];
+        this.authorsData = meta.Authors || [];
       }),
     );
   }
@@ -200,16 +202,12 @@ export class ChronomapDatabase extends BaserowDatabase {
     }
     console.log('FETCH CONTENT', this.title(), this.ready_, force);
     this.ready_ = true;
-    return forkJoin([
-      this.getTable('MapLayers'),
-      this.getTable('Authors'),
-      this.getTable('Content', force),
-    ]).pipe(
-      map(([mapLayersTable, authorsTable, contentTable]) => {
+    return this.api.getItems(this.workspaceId).pipe(
+      map((items: any[]) => {
         this.allLayers = [];
         const layers: any = {};
-        mapLayersTable?.rows.forEach((row: any) => {
-          const onLayers = row.On_Layers.map((x : any) => x.value) || [];
+        this.mapLayersData.forEach((row: any) => {
+          const onLayers = row.On_Layers || [];
           onLayers.forEach((layer: string) => {
             if (!this.allLayers.includes(layer)) {
               this.allLayers.push(layer);
@@ -218,31 +216,32 @@ export class ChronomapDatabase extends BaserowDatabase {
           layers[row.Name] = onLayers;
         });
         const authors: any = {};
-        authorsTable?.rows.forEach((row: any) => {
+        this.authorsData.forEach((row: any) => {
           authors[row.Name] = {
             name: row.Name,
             email: row.Email,
-            status: row.Status?.value,
+            status: row.Status,
           };
         });
         this.authors.set(authors);
         this.nonces = [];
         const contentItems: ContentItem[] = [];
-        contentTable?.rows.forEach((row: any) => {
-          const item: any = {
-            id: row.id,
+        items.forEach((item: any) => {
+          const row = item;
+          const ci: any = {
+            id: row.id ?? row._id,
             title: row.Title,
             notes: row.Notes,
             post_timestamp: row.Post_Timestamp ? dayjs(row.Post_Timestamp).toDate() : null,
-            status: row.Status?.value,
-            type: row.Type?.value,
+            status: row.Status,
+            type: row.Type,
             youtube_video_id: row.Youtube_Video_Id,
             content: row.Content,
-            image: row.Image?.[0]?.url,
-            audio: row.Audio?.[0]?.url,
+            image: row.Image,
+            audio: row.Audio,
             name: row.Name || 'Full Name',
             username: row.Username || 'username',
-            profile_image: row.Profile_Image?.[0]?.url || '/assets/img/default-profile-img.svg',
+            profile_image: row.Profile_Image || '/assets/img/default-profile-img.svg',
             like_count: row.Like_Count || 0,
             comment_count: row.Comment_Count || 0,
             link_title: row.Link_Title,
@@ -251,45 +250,47 @@ export class ChronomapDatabase extends BaserowDatabase {
             map_layers: [],
             off_map_layers: [],
             nonce: row.Nonce,
-            authors: row.Authors?.map((x: any) => authors[x.value]) || [],
-            tags: row.Tags?.map((x: any) => x.value) || [],
-            related: row.Related,
-            lastModified: dayjs(row.Last_Modified).toDate(),
+            authors: (row.Authors || []).map((x: string) => authors[x]).filter(Boolean) || [],
+            tags: row.Tags || [],
+            related: row.Related || [],
+            lastModified: row.Last_Modified ? dayjs(row.Last_Modified).toDate() : new Date(),
           };
           try {
-            item.extraProperties = row.Properties ? JSON.parse(row.Properties) : {};
+            ci.extraProperties = row.Properties ? JSON.parse(row.Properties) : {};
           } catch (e) {
-            item.extraProperties = {};
+            ci.extraProperties = {};
           }
-          item.extraProperties = Object.keys(item.extraProperties).map((key) => [key, item.extraProperties[key]]);
-          item.alt_post_timestamp = row.Alt_Post_Timestamp ? dayjs(row.Alt_Post_Timestamp).toDate() : item.post_timestamp;
-          row.Map_Layer.forEach((x: any) => {
-            const name = x.value;
+          ci.extraProperties = Object.keys(ci.extraProperties).map((key) => [key, ci.extraProperties[key]]);
+          ci.alt_post_timestamp = row.Alt_Post_Timestamp ? dayjs(row.Alt_Post_Timestamp).toDate() : ci.post_timestamp;
+          (row.Map_Layer || []).forEach((name: string) => {
             if (layers[name]) {
               layers[name].forEach((layer: string) => {
-                if (!item.map_layers.includes(layer)) {
-                  item.map_layers.push(layer);
+                if (!ci.map_layers.includes(layer)) {
+                  ci.map_layers.push(layer);
                 }
               });
             }
           });
           this.allLayers.forEach((layer: string) => {
-            if (!item.map_layers.includes(layer)) {
-              item.off_map_layers.push(layer);
+            if (!ci.map_layers.includes(layer)) {
+              ci.off_map_layers.push(layer);
             }
           });
-          if (!!item.nonce) {
-            this.nonces.push(item.nonce);
+          if (!!ci.nonce) {
+            this.nonces.push(ci.nonce);
           }
 
-          const contentItem: ContentItem = item;
+          const contentItem: ContentItem = ci;
           if (contentItem.status !== 'Published') { return; }
           if (!contentItem.authors.find((author: Author) => author.status === 'Editor' || author.status === 'Contributor')) { return; }
           if (!this.disableTimeline() && !contentItem.post_timestamp && !contentItem.alt_post_timestamp) { return; }
           contentItems.push(contentItem);
         });
         contentItems.forEach((item: ContentItem) => {
-          item.related = item.related.map((id: ContentItem) => (contentItems.find((i: ContentItem) => i.id === id.id) || {}) as ContentItem).filter((i: ContentItem) => !!i.id);
+          item.related = item.related.map((id: any) => {
+            const numId = typeof id === 'object' ? id.id : id;
+            return (contentItems.find((i: ContentItem) => i.id == numId) || {}) as ContentItem;
+          }).filter((i: ContentItem) => !!i.id);
         });
         if (this.disableTimeline()) {
           return contentItems.sort((a: ContentItem, b: ContentItem) => (MapUtils.parseMapView(a.geo).center?.lon || 0) - (MapUtils.parseMapView(b.geo).center?.lon || 0));
@@ -350,7 +351,7 @@ export class ChronomapDatabase extends BaserowDatabase {
 }
 
 
-export class DirectoryDatabase extends BaserowDatabase {
+export class DirectoryDatabase {
 
   chronomaps = signal<ChronomapDatabase[]>([]);
   title = signal<string>('');
@@ -366,40 +367,36 @@ export class DirectoryDatabase extends BaserowDatabase {
   zoomUntil = signal<number>(2100);
   url = signal<string>('');
 
-  constructor(dbId: number, http: HttpClient) {
-    super(BASEROW_ENDPOINT, BASEROW_ADMIN_TOKEN, dbId, http);
+  private workspaceId: string;
+
+  constructor(private dbId: number, private api: ChronomapsApi) {
+    this.workspaceId = `chronomaps-${dbId}`;
   }
 
   fetchMaps() {
-    this.fetchTables().subscribe();
-    this.getTable('Settings').subscribe((settingsTable) => {
-      const keyValues: any = {};
-      settingsTable?.rows.forEach((element: any) => {
-        keyValues[element.Key] = {value: element.Value, images: element.Image};
-      });
-      this.title.set(keyValues.Title?.value || '');
-      this.subtitle.set(keyValues.Subtitle?.value || '');
-      this.titleImageUrl.set(keyValues.Title_Image?.images?.[0]?.url || '');
-      this.description.set(keyValues.Description.value);
-      this.fullDescription.set(keyValues.Full_Description.value);
-      this.logos.set((keyValues.Logos?.images || []).map((i: any) => i.url));
-      this.logoLinks.set(keyValues.Logos?.value?.split(',') || []);
-      this.primaryColor.set(keyValues.Primary_Color.value);
-      this.secondaryColor.set(keyValues.Secondary_Color.value);
-      this.zoomFrom.set(keyValues.Zoom_From.value);
-      this.zoomUntil.set(keyValues.Zoom_Until.value);
-      this.url.set(keyValues.URL.value);
-    });
-    this.getTable('Chronomaps').subscribe((chronomapsTable) => {
-      this.chronomaps.set(chronomapsTable?.rows.filter(row => row.Status?.value === 'Published').map((chronomap: any) => {
-        const map = new ChronomapDatabase(this.database, chronomap, this.http);        
-        return map;
-      }) || []);
-      // forkJoin([...this.chronomaps().map(map => map.fetchMeta())]).subscribe((maps) => {
-      //   console.log('all maps loaded');
-      //   // const byUpdateTime = this.chronomaps().sort((a, b) => b.lastModified().getTime() - a.lastModified().getTime());
-      //   // this.chronomaps.set(byUpdateTime);
-      // });
+    forkJoin([
+      this.api.getWorkspace(this.workspaceId),
+      this.api.getItems(this.workspaceId),
+    ]).subscribe(([workspace, items]) => {
+      const meta = workspace;
+      this.title.set(meta.Title || '');
+      this.subtitle.set(meta.Subtitle || '');
+      this.titleImageUrl.set(meta.Title_Image || '');
+      this.description.set(meta.Description || '');
+      this.fullDescription.set(meta.Full_Description || '');
+      this.logos.set(meta.Logos || []);
+      this.logoLinks.set(meta.Logo_Links ? meta.Logo_Links.split(',') : []);
+      this.primaryColor.set(meta.Primary_Color || '#000000');
+      this.secondaryColor.set(meta.Secondary_Color || '#ffffff');
+      this.zoomFrom.set(meta.Zoom_From || 1900);
+      this.zoomUntil.set(meta.Zoom_Until || 2100);
+      this.url.set(meta.URL || '');
+
+      this.chronomaps.set(
+        items
+          .filter((item: any) => item.Status === 'Published')
+          .map((item: any) => new ChronomapDatabase(this.dbId, item, this.api))
+      );
     });
   }
 }
@@ -412,8 +409,10 @@ export class DataService {
 
   directory: DirectoryDatabase;
   currentDbId: number = 0;
+  private api: ChronomapsApi;
 
   constructor(private http: HttpClient) {
+    this.api = new ChronomapsApi(CHRONOMAPS_API_ENDPOINT, http);
   }
 
   fetchData(dbId: number) {
@@ -422,7 +421,7 @@ export class DataService {
     }
     console.log('fetching data for', dbId);
     this.currentDbId = dbId;
-    this.directory = new DirectoryDatabase(dbId, this.http);
+    this.directory = new DirectoryDatabase(dbId, this.api);
     this.directory.fetchMaps();
   }
 }
