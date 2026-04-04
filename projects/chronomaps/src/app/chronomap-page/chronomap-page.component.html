@@ -5,11 +5,14 @@
         ></app-infobar>
         <app-add-new-bar *ngIf='addNew' [chronomap]='chronomap_' [class.open]='addNewOpen' (close)='addNew=false'
         ></app-add-new-bar>        
-        <!-- <app-layers-bar *ngIf='layers' [class.open]='layersOpen' [api]='api' (close)='layers=false' (addNew)='addNew=true'
-        ></app-layers-bar> -->
+        <app-layers-bar *ngIf='layers' [class.open]='layersOpen' [chronomap]='chronomap_' (close)='layers=false' (addNew)='addNew=true'
+        ></app-layers-bar>
     </div>
     <div class='headers' [class.mobile-visible]='mobileMenu'>
         <div class='mobile-menu layout-mobile' [style.color]='chronomap()?.secondaryColor()'>
+            <div class='mobile-menu-item' (click)='layers = true; mobileMenu=false' [style.border-color]='chronomap()?.secondaryColor() + "40"'>
+                <span>Perspective Layers</span>
+            </div>
             <div class='mobile-menu-item' (click)='sortFilter = true; mobileMenu=false' [style.border-color]='chronomap()?.secondaryColor() + "40"'>
                 <span>Sort & Filter</span>
             </div>
@@ -32,6 +35,7 @@
                 </div>
             </div>
             <div class='controls layout-desktop'>
+                <img class='layers' src='assets/img/icon-layers.svg' (click)='layers = true'/>
                 <img class='add-new' src='assets/img/icon-add-new.svg' (click)='addNew = true'/>
                 <svg class='info' (click)='info = true' width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M6.86098 4.30891C8.38213 3.2925 10.1705 2.75 12 2.75C13.2147 2.75 14.4176 2.98926 15.5398 3.45411C16.6621 3.91897 17.6818 4.60032 18.5407 5.45926C19.3997 6.3182 20.081 7.33792 20.5459 8.46018C21.0107 9.58244 21.25 10.7853 21.25 12C21.25 13.8295 20.7075 15.6179 19.6911 17.139C18.6747 18.6602 17.23 19.8458 15.5398 20.5459C13.8496 21.246 11.9897 21.4292 10.1954 21.0723C8.4011 20.7154 6.7529 19.8344 5.45927 18.5407C4.16563 17.2471 3.28465 15.5989 2.92774 13.8046C2.57083 12.0103 2.75401 10.1504 3.45412 8.46018C4.15423 6.76996 5.33982 5.32531 6.86098 4.30891Z" 

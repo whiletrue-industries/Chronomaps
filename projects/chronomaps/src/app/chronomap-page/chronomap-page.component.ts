@@ -25,9 +25,11 @@ export class ChronomapPageComponent {
   _info = false;
   _addNew = false;
   _sortFilter = false;
+  _layers = false;
   infoOpen = false;
   addNewOpen = false;
   sortFilterOpen = false;
+  layersOpen = false;
   mobileMenu = false;
 
   marked = marked;
@@ -86,6 +88,7 @@ export class ChronomapPageComponent {
     console.log('INFO=', value);
     this._addNew = false;
     this._sortFilter = false;
+    this._layers = false;
     localStorage.setItem(this.storageKey, 'opened');
     if (value) {
       this._info = value;
@@ -100,6 +103,7 @@ export class ChronomapPageComponent {
   set addNew(value) {
     this._info = false;
     this._sortFilter = false;
+    this._layers = false;
     if (value) {
       this._addNew = value;
       timer(0).subscribe(() => {this.addNewOpen = value;});  
@@ -113,12 +117,27 @@ export class ChronomapPageComponent {
   set sortFilter(value) {
     this._info = false;
     this._addNew = false;
+    this._layers = false;
     if (value) {    
       this._sortFilter = value;
       timer(0).subscribe(() => {this._sortFilter = value;});
     } else {
       this._sortFilter = value;
       timer(300).subscribe(() => {this._sortFilter = value;});
+    }
+  }
+
+  get layers() { return this._layers; }
+  set layers(value) {
+    this._info = false;
+    this._addNew = false;
+    this._sortFilter = false;
+    if (value) {    
+      this._layers = value;
+      timer(0).subscribe(() => {this.layersOpen = value;});
+    } else {
+      this.layersOpen = value;
+      timer(300).subscribe(() => {this._layers = value;});
     }
   }
 
